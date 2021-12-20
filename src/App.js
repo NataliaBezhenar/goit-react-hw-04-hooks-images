@@ -18,7 +18,7 @@ export default function App() {
   const [page, setPage] = useState(1);
   const [error, setError] = useState(false);
   const [hideLoadMoreBtn, setHideLoadMoreBtn] = useState(false);
-
+  const [isLoading, setIsLoading] = useState(false);
   useEffect(() => {
     if (!searchQuery) {
       return;
@@ -28,6 +28,7 @@ export default function App() {
   }, [searchQuery, page]);
 
   const getImages = () => {
+    setIsLoading(true);
     fetchImages(searchQuery, page)
       .then(({ hits }) => {
         if (hits.length === 0) {
@@ -40,7 +41,8 @@ export default function App() {
         setOutput([...output, ...hits]);
         setStatus("resolved");
       })
-      .catch((error) => setError(error));
+      .catch((error) => setError(error))
+      .finally(() => setIsLoading(false));
   };
 
   const showBtn =
@@ -109,6 +111,11 @@ export default function App() {
     <div className="App">
       <Searchbar onSubmit={handleFormSubmit} />
       {result}
+      {isLoading && (
+        <div className="Wrapper">
+          <Spinner />
+        </div>
+      )}
       {showBtn && (
         <div className="Wrapper">
           <Button onLoadMoreClick={handleLoadMoreBtnClick} />

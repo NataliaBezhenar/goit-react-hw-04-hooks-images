@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import React, { Component, useEffect, useState } from "react";
 import "./App.css";
 import { ToastContainer } from "react-toastify";
 
@@ -9,147 +9,113 @@ import Button from "./components/Button";
 import { fetchImages, PER_PAGE } from "./services/fetchApi";
 import Spinner from "./components/Loader";
 
-class App extends Component {
-  state = {
-    showModal: false,
-    modalContent: "",
-    searchQuery: "",
-    status: "idle",
-    output: [],
-    page: 1,
-    error: null,
-    hideLoadMoreBtn: false,
-  };
+export default function App() {
+  const [status, setStatus] = useState("idle");
+  const [output, setOutput] = useState([]);
+  const [showModal, setShowModal] = useState(false);
+  const [modalContent, setModalContent] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const [error, setError] = useState(false);
+  const [hideLoadMoreBtn, setHideLoadMoreBtn] = useState(false);
 
-  componentDidUpdate(prevProps, { searchQuery, page }) {
-    if (searchQuery !== this.state.searchQuery) {
-      this.setState({ status: "pending" });
+  useEffect(() => {
+    if (!searchQuery) {
+      return;
     }
-    if (searchQuery !== this.state.searchQuery || page !== this.state.page) {
-      this.getImages();
-    }
-    this.handleScroll();
-  }
 
-  handleScroll = () => {
-    window.scrollTo({
-      top: document.documentElement.scrollHeight,
-      behavior: "smooth",
-    });
-  };
+    getImages();
+  }, [searchQuery, page]);
 
-  toggleLoadMoreBtn = () => {
-    this.setState(({ hideLoadMoreBtn }) => ({
-      hideLoadMoreBtn: !hideLoadMoreBtn,
-    }));
-  };
-
-  getImages = () => {
-    const { searchQuery, page } = this.state;
+  const getImages = () => {
     fetchImages(searchQuery, page)
       .then(({ hits }) => {
         if (hits.length === 0) {
-          this.setState({ status: "rejected" });
+          setStatus("rejected");
           return;
         }
         if (hits.length < PER_PAGE) {
-          this.toggleLoadMoreBtn();
+          toggleLoadMoreBtn();
         }
-        this.setState(({ output }) => {
-          return {
-            output: [...output, ...hits],
-            status: "resolved",
-          };
-        });
+        setOutput([...output, ...hits]);
+        setStatus("resolved");
       })
-      .catch((error) => this.setState({ error, status: "rejected" }));
+      .catch((error) => setError(error));
   };
 
-  toggleModal = () => {
-    this.setState(({ showModal }) => ({ showModal: !showModal }));
+  const showBtn =
+    output.length > 0 && status !== "rejected" && !hideLoadMoreBtn;
+
+  const toggleLoadMoreBtn = () => {
+    setHideLoadMoreBtn(!hideLoadMoreBtn);
   };
 
-  modalContentShow = (itemId) => {
-    const { output } = this.state;
+  const handleFormSubmit = (searchQuery) => {
+    setSearchQuery(searchQuery);
+    setPage(1);
+    setOutput([]);
+    setHideLoadMoreBtn(false);
+  };
+
+  const toggleModal = () => {
+    setShowModal(!showModal);
+  };
+
+  const modalContentShow = (itemId) => {
     const element = output.find(({ id }) => id === itemId);
-    this.setState({ modalContent: element.largeImageURL });
+    setModalContent(element.largeImageURL);
   };
 
-  handleFormSubmit = (searchQuery) => {
-    this.setState({ searchQuery, page: 1, output: [], hideLoadMoreBtn: false });
+  const handleLoadMoreBtnClick = () => {
+    setPage((prev) => prev + 1);
   };
 
-  handleLoadMoreBtnClick = () => {
-    this.setState(({ page }) => {
-      return {
-        page: page + 1,
-      };
-    });
-  };
-
-  modalContentShow = (itemId) => {
-    const { output } = this.state;
-    const element = output.find(({ id }) => id === itemId);
-    this.setState({ modalContent: element.largeImageURL });
-  };
-
-  render() {
-    const { showModal, output, modalContent, status, hideLoadMoreBtn } =
-      this.state;
-    const showBtn =
-      output.length > 0 && status !== "rejected" && !hideLoadMoreBtn;
-
-    let result = null;
-    if (status === "idle") {
-      result = (
-        <div className="TextBlock">
-          <h2>Enter search query</h2>
-        </div>
-      );
-    }
-
-    if (status === "pending") {
-      result = (
-        <div className="Wrapper">
-          <Spinner />
-        </div>
-      );
-    }
-
-    if (status === "rejected") {
-      result = (
-        <div className="TextBlock">
-          <h2>Nothing was found on your query. Please try again</h2>
-        </div>
-      );
-    }
-
-    if (status === "resolved") {
-      result = (
-        <ImageGallery
-          images={output}
-          onClick={this.toggleModal}
-          onItemClick={this.modalContentShow}
-        />
-      );
-    }
-
-    return (
-      <div className="App">
-        <Searchbar onSubmit={this.handleFormSubmit} />
-        {result}
-        {showBtn && (
-          <div className="Wrapper">
-            <Button onLoadMoreClick={this.handleLoadMoreBtnClick} />
-          </div>
-        )}
-        {showModal && (
-          <Modal content={modalContent} onClose={this.toggleModal} />
-        )}
-        <ToastContainer autoClose={5000} position="top-center" />
+  let result = null;
+  if (status === "idle") {
+    result = (
+      <div className="TextBlock">
+        <h2>Enter search query</h2>
       </div>
     );
   }
-}
 
-export default App;
+  if (status === "pending") {
+    result = (
+      <div className="Wrapper">
+        <Spinner />
+      </div>
+    );
+  }
+
+  if (status === "rejected") {
+    result = (
+      <div className="TextBlock">
+        <h2>Nothing was found on your query. Please try again</h2>
+      </div>
+    );
+  }
+
+  if (status === "resolved") {
+    result = (
+      <ImageGallery
+        images={output}
+        onClick={toggleModal}
+        onItemClick={modalContentShow}
+      />
+    );
+  }
+
+  return (
+    <div className="App">
+      <Searchbar onSubmit={handleFormSubmit} />
+      {result}
+      {showBtn && (
+        <div className="Wrapper">
+          <Button onLoadMoreClick={handleLoadMoreBtnClick} />
+        </div>
+      )}
+      {showModal && <Modal content={modalContent} onClose={toggleModal} />}
+      <ToastContainer autoClose={5000} position="top-center" />
+    </div>
+  );
+}

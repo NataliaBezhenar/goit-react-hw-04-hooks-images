@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import "./Modal.css";
 import PropTypes from "prop-types";
 
-const modalRoot = document.querySelector("#modal-root");
+const modalRoot = document.getElementById("modal-root");
 
 export default function Modal({ content, onClose }) {
   useEffect(() => {

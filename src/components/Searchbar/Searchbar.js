@@ -6,7 +6,7 @@ import { ImSearch } from "react-icons/im";
 import "react-toastify/dist/ReactToastify.css";
 
 export default function Searchbar({ onSubmit }) {
-  const [searchQuery, setSearchQuery] = useState("track");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const handleSubmit = (e) => {
     e.preventDefault();

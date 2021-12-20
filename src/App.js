@@ -1,4 +1,4 @@
-import React, { Component, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import "./App.css";
 import { ToastContainer } from "react-toastify";
 
@@ -19,6 +19,7 @@ export default function App() {
   const [error, setError] = useState(false);
   const [hideLoadMoreBtn, setHideLoadMoreBtn] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
   useEffect(() => {
     if (!searchQuery) {
       return;
@@ -39,10 +40,18 @@ export default function App() {
           toggleLoadMoreBtn();
         }
         setOutput([...output, ...hits]);
+        handleScroll();
         setStatus("resolved");
       })
       .catch((error) => setError(error))
       .finally(() => setIsLoading(false));
+  };
+
+  const handleScroll = () => {
+    window.scrollTo({
+      top: document.documentElement.scrollHeight,
+      behavior: "smooth",
+    });
   };
 
   const showBtn =
